@@ -16,7 +16,9 @@ import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuild
 import org.springframework.cloud.task.configuration.EnableTask;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -27,7 +29,7 @@ public class SprinklerEnricherConfiguration {
 
     @Bean
     public Job sprinklerHistoryJob(JobRepository jobRepository, Step step1) {
-        return new JobBuilder("sprinklerHistory", jobRepository)
+        return new JobBuilder("sprinkler report job", jobRepository)
                 .start(step1)
                 .incrementer(new RunIdIncrementer())
                 .build();
@@ -35,9 +37,9 @@ public class SprinklerEnricherConfiguration {
 
     @Bean
     public Step sprinklerHistoryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager,
-            ItemReader<SprinklerData> reader, ItemProcessor<SprinklerData, SprinklerData> itemProcessor,
-            ItemWriter<SprinklerData> writer) {
-        return new StepBuilder("sprinklerHistory", jobRepository).<SprinklerData, SprinklerData>chunk(5, transactionManager).
+            ItemReader<WeatherData> reader, ItemProcessor<WeatherData, SprinklerStatus> itemProcessor,
+            ItemWriter<SprinklerStatus> writer) {
+        return new StepBuilder("sprinkler report step", jobRepository).<WeatherData, SprinklerStatus>chunk(5, transactionManager).
                 reader(reader).
                 processor(itemProcessor).
                 writer(writer).
@@ -45,20 +47,20 @@ public class SprinklerEnricherConfiguration {
     }
 
     @Bean
-    public JdbcCursorItemReader<SprinklerData> sprinklerDataTableReader(DataSource dataSource) {
-        String sql = "select * from sprinkler_history";
-        return new JdbcCursorItemReaderBuilder<SprinklerData>()
+    public JdbcCursorItemReader<WeatherData> weatherDataTableReader(DataSource dataSource) {
+        String sql = "select * from weather_data";
+        return new JdbcCursorItemReaderBuilder<WeatherData>()
                 .name("SprinklerDataTableReader")
                 .dataSource(dataSource)
                 .sql(sql)
-                .rowMapper(new DataClassRowMapper<>(SprinklerData.class))
+                .rowMapper(new DataClassRowMapper<>(WeatherData.class))
                 .build();
     }
 
     @Bean
-    public JdbcBatchItemWriter<SprinklerData> billingDataTableWriter(DataSource dataSource) {
-        String sql = "insert into sprinkler_event (sprinklerId, reason, startTime) values (:sprinklerId, :reason, :startTime)";
-        return new JdbcBatchItemWriterBuilder<SprinklerData>()
+    public JdbcBatchItemWriter<SprinklerStatus> billingDataTableWriter(DataSource dataSource) {
+        String sql = "insert into sprinkler_history (status_date, state) values ( :statusDate, :state)";
+        return new JdbcBatchItemWriterBuilder<SprinklerStatus>()
                 .dataSource(dataSource)
                 .sql(sql)
                 .beanMapped()
@@ -66,13 +68,28 @@ public class SprinklerEnricherConfiguration {
     }
 
     @Bean
-    public ItemProcessor<SprinklerData, SprinklerData> itemProcessor() {
+    public ItemProcessor<WeatherData, SprinklerStatus> itemProcessor(JdbcTemplate jdbcTemplate) {
         return item -> {
-            item.setSprinklerId("AXRVMW25");
-            return item;
+            String sql = "SELECT state FROM sprinkler_state WHERE statusTime = ?";
+            String sprinklerStateForDay = "Sprinkler was activated.";
+            try {
+                Integer i = jdbcTemplate.queryForObject(sql, Integer.class, item.weatherTime());
+                if (i.equals(0)) {
+                    sprinklerStateForDay = "Sprinkler was not activated.";
+                }
+            } catch (EmptyResultDataAccessException erd) {
+                sprinklerStateForDay = "Sprinkler did not report activity.";
+            }
+
+            return new SprinklerStatus(item.weatherTime(), sprinklerStateForDay);
         };
     }
-    
+
+
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
     
     
 
