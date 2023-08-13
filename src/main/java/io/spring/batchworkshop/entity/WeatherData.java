@@ -1,4 +1,4 @@
-package io.spring.batchworkshop;
+package io.spring.batchworkshop.entity;
 
 import java.time.ZonedDateTime;
 

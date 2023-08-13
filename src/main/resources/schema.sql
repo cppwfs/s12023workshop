@@ -4,8 +4,8 @@ CREATE TABLE sprinkler_state (
                                statusTime TIMESTAMP,
                                state BOOLEAN
 );
-DROP TABLE IF EXISTS sprinkler_history;
-CREATE TABLE IF NOT EXISTS sprinkler_history (
+DROP TABLE IF EXISTS sprinkler_report;
+CREATE TABLE IF NOT EXISTS sprinkler_report (
                                    status_date DATETIME NOT NULL,
                                    state VARCHAR(255) NOT NULL
 );

@@ -1,5 +1,7 @@
 package io.spring.batchworkshop;
 
+import io.spring.batchworkshop.entity.SprinklerStatus;
+import io.spring.batchworkshop.entity.WeatherData;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -25,10 +27,10 @@ import javax.sql.DataSource;
 
 @EnableTask
 @Configuration
-public class SprinklerEnricherConfiguration {
+public class SprinklerReportConfiguration {
 
     @Bean
-    public Job sprinklerHistoryJob(JobRepository jobRepository, Step step1) {
+    public Job sprinklerReportJob(JobRepository jobRepository, Step step1) {
         return new JobBuilder("sprinkler report job", jobRepository)
                 .start(step1)
                 .incrementer(new RunIdIncrementer())
@@ -36,9 +38,9 @@ public class SprinklerEnricherConfiguration {
     }
 
     @Bean
-    public Step sprinklerHistoryStep(JobRepository jobRepository, PlatformTransactionManager transactionManager,
-            ItemReader<WeatherData> reader, ItemProcessor<WeatherData, SprinklerStatus> itemProcessor,
-            ItemWriter<SprinklerStatus> writer) {
+    public Step sprinklerReportStep(JobRepository jobRepository, PlatformTransactionManager transactionManager,
+                                    ItemReader<WeatherData> reader, ItemProcessor<WeatherData, SprinklerStatus> itemProcessor,
+                                    ItemWriter<SprinklerStatus> writer) {
         return new StepBuilder("sprinkler report step", jobRepository).<WeatherData, SprinklerStatus>chunk(5, transactionManager).
                 reader(reader).
                 processor(itemProcessor).
@@ -59,7 +61,7 @@ public class SprinklerEnricherConfiguration {
 
     @Bean
     public JdbcBatchItemWriter<SprinklerStatus> billingDataTableWriter(DataSource dataSource) {
-        String sql = "insert into sprinkler_history (status_date, state) values ( :statusDate, :state)";
+        String sql = "insert into sprinkler_report (status_date, state) values ( :statusDate, :state)";
         return new JdbcBatchItemWriterBuilder<SprinklerStatus>()
                 .dataSource(dataSource)
                 .sql(sql)

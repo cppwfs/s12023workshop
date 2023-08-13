@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BatchWorkshopApplication {
+public class SprinklerReportApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(BatchWorkshopApplication.class, args);
+		SpringApplication.run(SprinklerReportApplication.class, args);
 	}
 
 }
