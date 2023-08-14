@@ -1,7 +1,7 @@
-package io.spring.batchworkshop;
+package io.spring.sprinkler;
 
-import io.spring.batchworkshop.entity.SprinklerStatus;
-import io.spring.batchworkshop.entity.WeatherData;
+import io.spring.sprinkler.entity.SprinklerStatus;
+import io.spring.sprinkler.entity.WeatherData;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
